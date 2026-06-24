@@ -424,19 +424,19 @@ void SensorMesh::handleCommand(uint32_t sender_timestamp, char* command, char* r
       Serial.printf("\n");
     }
     reply[0] = 0;
-  } else if (memcmp(command, "io ", 2) == 0) { // io {value}: write, io: read 
+  } else if (memcmp(command, "io ", 2) == 0) { // io {value}: write, io: read
     if (command[2] == ' ') { // it's a write
       uint32_t val;
       uint32_t g = board.getGpio();
       if (command[3] == 'r') { // reset bits
         sscanf(&command[4], "%x", &val);
-        val = g & ~val;    
+        val = g & ~val;
       } else if (command[3] == 's') { // set bits
         sscanf(&command[4], "%x", &val);
-        val |= g;    
+        val |= g;
       } else if (command[3] == 't') { // toggle bits
         sscanf(&command[4], "%x", &val);
-        val ^= g;    
+        val ^= g;
       } else { // set value
         sscanf(&command[3], "%x", &val);
       }
@@ -573,7 +573,7 @@ void SensorMesh::onPeerDataRecv(mesh::Packet* packet, uint8_t type, int sender_i
             sendAckTo(*from, ack_hash, packet->getPathHashSize());
           }
         }
-      } else if (flags == TXT_TYPE_CLI_DATA) {  
+      } else if (flags == TXT_TYPE_CLI_DATA) {
         from->last_timestamp = sender_timestamp;
         from->last_activity = getRTCClock()->getCurrentTime();
 
@@ -731,6 +731,7 @@ SensorMesh::SensorMesh(mesh::MainBoard& board, mesh::Radio& radio, mesh::Millise
   _prefs.gps_enabled = 0;
   _prefs.gps_interval = 0;
   _prefs.advert_loc_policy = ADVERT_LOC_PREFS;
+  _prefs.radio_fem_rxgain = 1;
 
   memset(default_scope.key, 0, sizeof(default_scope.key));
 }
@@ -766,6 +767,7 @@ void SensorMesh::begin(FILESYSTEM* fs) {
 
   radio_driver.setParams(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
   radio_driver.setTxPower(_prefs.tx_power_dbm);
+  board.setLoRaFemLnaEnabled(_prefs.radio_fem_rxgain);
 
   updateAdvertTimer();
   updateFloodAdvertTimer();
@@ -854,7 +856,7 @@ void SensorMesh::formatRadioStatsReply(char *reply) {
 }
 
 void SensorMesh::formatPacketStatsReply(char *reply) {
-  StatsFormatHelper::formatPacketStats(reply, radio_driver, getNumSentFlood(), getNumSentDirect(), 
+  StatsFormatHelper::formatPacketStats(reply, radio_driver, getNumSentFlood(), getNumSentDirect(),
                                        getNumRecvFlood(), getNumRecvDirect());
 }
 
