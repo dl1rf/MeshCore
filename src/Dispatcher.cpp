@@ -42,7 +42,7 @@ void Dispatcher::updateTxBudget() {
   float duty_cycle = 1.0f / (1.0f + getAirtimeBudgetFactor());
   unsigned long max_budget = (unsigned long)(getDutyCycleWindowMs() * duty_cycle);
   unsigned long refill = (unsigned long)(elapsed * duty_cycle);
-  
+
   if (refill > 0) {
     tx_budget_ms += refill;
     if (tx_budget_ms > max_budget) {
@@ -66,6 +66,7 @@ uint32_t Dispatcher::getCADFailMaxDuration() const {
 void Dispatcher::loop() {
   if (millisHasNowPassed(next_floor_calib_time)) {
     _radio->triggerNoiseFloorCalibrate(getInterferenceThreshold());
+    _radio->setCADEnabled(getCADEnabled());
     next_floor_calib_time = futureMillis(NOISE_FLOOR_CALIB_INTERVAL);
   }
   _radio->loop();
@@ -218,7 +219,7 @@ void Dispatcher::checkRecv() {
   if (pkt) {
     #if MESH_PACKET_LOGGING
     Serial.print(getLogDateTime());
-    Serial.printf(": RX, len=%d (type=%d, route=%s, payload_len=%d) SNR=%d RSSI=%d score=%d time=%d", 
+    Serial.printf(": RX, len=%d (type=%d, route=%s, payload_len=%d) SNR=%d RSSI=%d score=%d time=%d",
             pkt->getRawLength(), pkt->getPayloadType(), pkt->isRouteDirect() ? "D" : "F", pkt->payload_len,
             (int)pkt->getSNR(), (int)_radio->getLastRSSI(), (int)(score*1000), air_time);
 
@@ -273,9 +274,9 @@ void Dispatcher::processRecvPacket(Packet* pkt) {
 
 void Dispatcher::checkSend() {
   if (_mgr->getOutboundCount(_ms->getMillis()) == 0) return;
-  
+
   updateTxBudget();
-  
+
   uint32_t est_airtime = _radio->getEstAirtimeFor(MAX_TRANS_UNIT);
   if (tx_budget_ms < est_airtime / MIN_TX_BUDGET_AIRTIME_DIV) {
     float duty_cycle = 1.0f / (1.0f + getAirtimeBudgetFactor());
@@ -283,7 +284,7 @@ void Dispatcher::checkSend() {
     next_tx_time = futureMillis((unsigned long)(needed / duty_cycle));
     return;
   }
-  
+
   if (!millisHasNowPassed(next_tx_time)) return;
   if (_radio->isReceiving()) {
     if (cad_busy_start == 0) {
@@ -330,7 +331,7 @@ void Dispatcher::checkSend() {
         MESH_DEBUG_PRINTLN("%s Dispatcher::loop(): ERROR: send start failed!", getLogDateTime());
 
         logTxFail(outbound, outbound->getRawLength());
-  
+
         releasePacket(outbound);  // return to pool
         outbound = NULL;
         return;
@@ -339,7 +340,7 @@ void Dispatcher::checkSend() {
 
     #if MESH_PACKET_LOGGING
       Serial.print(getLogDateTime());
-      Serial.printf(": TX, len=%d (type=%d, route=%s, payload_len=%d)", 
+      Serial.printf(": TX, len=%d (type=%d, route=%s, payload_len=%d)",
             len, outbound->getPayloadType(), outbound->isRouteDirect() ? "D" : "F", outbound->payload_len);
       if (outbound->getPayloadType() == PAYLOAD_TYPE_PATH || outbound->getPayloadType() == PAYLOAD_TYPE_REQ
         || outbound->getPayloadType() == PAYLOAD_TYPE_RESPONSE || outbound->getPayloadType() == PAYLOAD_TYPE_TXT_MSG) {

@@ -105,6 +105,7 @@ public:
 protected:
   float getAirtimeBudgetFactor() const override;
   int getInterferenceThreshold() const override;
+  bool getCADEnabled() const override;
   int calcRxDelay(float score, uint32_t air_time) const override;
   uint32_t getRetransmitDelay(const mesh::Packet *packet) override;
   uint32_t getDirectRetransmitDelay(const mesh::Packet *packet) override;
@@ -188,7 +189,7 @@ private:
   void updateContactFromFrame(ContactInfo &contact, uint32_t& last_mod, const uint8_t *frame, int len);
   void addToOfflineQueue(const uint8_t frame[], int len);
   int getFromOfflineQueue(uint8_t frame[]);
-  int getBlobByKey(const uint8_t key[], int key_len, uint8_t dest_buf[]) override { 
+  int getBlobByKey(const uint8_t key[], int key_len, uint8_t dest_buf[]) override {
     return _store->getBlobByKey(key, key_len, dest_buf);
   }
   bool putBlobByKey(const uint8_t key[], int key_len, const uint8_t src_buf[], int len) override {
